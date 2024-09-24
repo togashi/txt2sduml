@@ -1,10 +1,9 @@
 import asyncio
 import argparse
-import sys
-import pkg_resources
 
-from . import sdorg
 from .lib import logger
+from . import sdorg
+from . import pkg_info
 
 def handler(args):
     asyncio.run(sdorg.exec(args))
@@ -21,12 +20,9 @@ def exec():
     parser.add_argument('-t', '--type', metavar='OUTPUT_TYPE', choices=['svg', 'pdf'], default='svg', help=argparse.SUPPRESS)
     parser.add_argument('-O', '--allow-overwrite', action='store_true', help='出力ファイルの上書きを許容する')
     parser.add_argument('-P', '--pause', action='store_true', default=False, help='ページの処理が終わる度に一時停止する')
-    try:
-        ver = pkg_resources.get_distribution('txt2sduml').version
-    except:
-        ver = 'unknown'
-    parser.add_argument('-V', '--version', action='version', help="バージョン情報を表示する", version='{} {}'.format(parser.prog, ver))
+    parser.add_argument('-V', '--version', action='version', help="バージョン情報を表示する", version='{} {}'.format(parser.prog, pkg_info.version))
     parser.add_argument('--dry-run', action='store_true', help="ファイル出力をスキップする")
+    parser.add_argument('-E', '--edit', action='store_true', help="sequencedirgram.org のエディターを開く")
     parser.add_argument('--logger', action='store', default=None, help=argparse.SUPPRESS)
     parser.add_argument('filename', nargs='+')
     parser.set_defaults(handler=handler)

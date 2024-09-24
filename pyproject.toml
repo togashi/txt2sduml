@@ -1,11 +1,11 @@
 [project]
 name = "txt2sduml"
-version = "0.1.0"
 authors = [{name="togashi", email="togashix@gmail.com"}]
 description = "txt2sduml is a tool to generate sequence diagram from text, via sequencediagram.org"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = []
+dynamic = ["version"]
 
 dependencies = [
     "pytest-playwright"
@@ -22,6 +22,9 @@ txt2sduml = "src:main"
 [project.urls]
 "Homepage" = "https://github.com/togashi/txt2sduml"
 "Bug Tracker" = "https://github.com/togashi/txt2sduml/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "src.pkg_info.version"}
 
 [tool.setuptools.packages.find]
 exclude = [

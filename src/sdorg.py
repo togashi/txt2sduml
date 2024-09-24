@@ -38,9 +38,11 @@ async def exec_one(args, page, input):
     await source.fill(src)
     await page.keyboard.press('Escape')
     await asyncio.sleep(0.5 * args.delay_multiplier)
-    if args.type == 'svg':
-        await get_svg(args, page, input)
-    if args.pause:
+    if not args.edit:
+        if args.type == 'svg':
+            await get_svg(args, page, input)
+        pass
+    if args.pause or args.edit:
         await page.pause()
     return
 
@@ -54,15 +56,19 @@ async def exec(args):
         elif args.browser_type == 'webkit':
             browser_type = pw.webkit
         else:
-            browser_type = pw.chromium
-        browser = await browser_type.launch(headless=args.headless)
+            browser_type = pw.chromium if not args.edit else pw.webkit
+        browser = await browser_type.launch(headless=args.headless and not args.edit)
         context = await browser.new_context(accept_downloads=True)
         page = await context.new_page()
         await page.goto('https://sequencediagram.org/')
         await asyncio.sleep(0.5 * args.delay_multiplier)
         for file in args.filename:
             await exec_one(args, page, file)
+            if args.edit:
+                continue
             await asyncio.sleep(0.5 * args.delay_multiplier)
+        if args.edit:
+            return
         await context.close()
         await browser.close()
     return
