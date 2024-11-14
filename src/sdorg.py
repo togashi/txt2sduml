@@ -24,6 +24,33 @@ async def get_svg(args, page, input):
     await download.save_as(dest)
 
 
+async def save_pdf(args, page, input):
+    dest = format(Path(input).stem) + '.pdf'
+    if os.path.isfile(dest):
+        if not args.allow_overwrite:
+            args.logger.debug('DEBUG: 既存のファイル "{}" を上書きしません'.format(dest))
+            return
+        else:
+            args.logger.debug('DEBUG: 既存のファイル "{}" が上書きされます'.format(dest))
+            pass
+        pass
+    if args.dry_run:
+        return
+    canvas = page.locator('canvas#interactionCanvas').first
+    w = await canvas.get_attribute('width')
+    h = await canvas.get_attribute('height')
+    await page.pdf(path=dest, width=w, height=h)
+    await asyncio.sleep(0.5 * args.delay_multiplier)
+    await canvas.focus()
+
+
+async def get_pdf(args, page, input):
+    await page.keyboard.press('Control+M')
+    await asyncio.sleep(0.5 * args.delay_multiplier)
+    await save_pdf(args, page, input)
+    await page.keyboard.press('Control+M')
+
+
 async def exec_one(args, page, input):
     if input is None:
         src = sys.stdin.read()
@@ -41,14 +68,19 @@ async def exec_one(args, page, input):
     if not args.edit:
         if args.type == 'svg':
             await get_svg(args, page, input)
+        elif args.type == 'pdf':
+            await get_pdf(args, page, input)
         pass
     if args.pause or args.edit:
         await page.pause()
     return
 
 
-async def exec(args):
-    async with async_playwright() as pw:
+async def get_browser_context(args, pw):
+    if args.chrome_remote_debugging:
+        browser = await pw.chromium.connect_over_cdp(args.chrome_remote_debugging)
+        context = browser.contexts[0]
+    else:
         if args.browser_type == 'chromium':
             browser_type = pw.chromium
         elif args.browser_type == 'firefox':
@@ -59,6 +91,13 @@ async def exec(args):
             browser_type = pw.chromium if not args.edit else pw.webkit
         browser = await browser_type.launch(headless=args.headless and not args.edit)
         context = await browser.new_context(accept_downloads=True)
+    return (browser, context)
+
+
+async def exec(args):
+    async with async_playwright() as pw:
+        (browser, context) = await get_browser_context(args, pw)
+        # print('next: context.new_page()')
         page = await context.new_page()
         await page.goto('https://sequencediagram.org/')
         await asyncio.sleep(0.5 * args.delay_multiplier)
